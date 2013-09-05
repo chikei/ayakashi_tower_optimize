@@ -427,7 +427,7 @@ class skill_f{
       auto c_it = chance.begin();
       for(auto e_it = enemys.begin(), e_end = enemys.end(); 
           e_it != e_end; ++e_it, ++r_it, ++c_it){
-        if(try_attack(ms, *e_it) != -1){
+        if(try_skill_attack(ms, *e_it) != -1){
           if(r_it->size() == 0) {
             auto chance = highest_chance(ms, *e_it);
             *r_it = ms;
