@@ -559,17 +559,18 @@ int parse_file(const std::string& file,
       return EXIT_FAILURE;
     }
     fmonster.close();
-    std::cout << out.size() << " data loaded." << std::endl;
+    std::cout << out.size() << " data loaded from " << file << std::endl;
     return EXIT_SUCCESS;
 }
 
 int main (int argc, char *argv[]){
+  std::string prefix;
   if(argc < 2){
-      std::cerr << "Please input file prefix." << std::endl;
-      return EXIT_FAILURE;
+      std::cout << "Please input file prefix: ";
+      std::cin >> prefix;
+      std::cout << std::endl;
   }
 
-  std::string prefix;
   if(argc >= 2) prefix.assign(argv[1]);
 
   bool enable[] = {true, true, true, true};
@@ -592,7 +593,12 @@ int main (int argc, char *argv[]){
   std::cout << "Loading daemon data." << std::endl;
   if(parse_file(prefix + "_daemons.csv", *parse_monster, monster)
       == EXIT_FAILURE)
-  { return EXIT_FAILURE; }
+  { 
+      std::cout << "Press any key to continue..." << std::endl;
+      std::cin.get();
+      std::cin.get();
+      return EXIT_FAILURE; 
+  }
 
   std::cout << "Loading basic monsters data." << std::endl;
   if(parse_file("tower_basic.csv", *parse_enemy, basic_enemys)
