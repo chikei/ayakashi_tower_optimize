@@ -142,7 +142,9 @@ std::shared_ptr<monster> parse_monster(const std::string& line){
     m->skill_buff = buff_def;
   }
 
-  if(data[10].find(u8"\u9AD8\u767C\u52D5\u7387") != std::string::npos){
+  if(data[10].find(u8"\u6975\u9AD8\u767C\u52D5\u7387") != std::string::npos){
+    m->skill_freq = 95;
+  } else if(data[10].find(u8"\u9AD8\u767C\u52D5\u7387") != std::string::npos){
     m->skill_freq = 70;
   }
 
@@ -315,9 +317,9 @@ int try_skill_attack(const std::vector<std::shared_ptr<monster>>& our,
 }
 
 template <typename E>
-std::pair<int, double> highest_chance(const std::vector<std::shared_ptr<monster>>& our,
+std::pair<int, uint64_t> highest_chance(const std::vector<std::shared_ptr<monster>>& our,
     std::shared_ptr<E> enemy){
-  auto chance = 0.0;
+  uint64_t chance = 0;
   int base = 0;
   int ld = 0;
   for(const auto& m : our) { base += m->attack; }
@@ -329,6 +331,7 @@ std::pair<int, double> highest_chance(const std::vector<std::shared_ptr<monster>
       const auto& m = our[j];
       auto sk = compute_skill(our, m, enemy->defense, enemy->attr);
       auto freq = (i == j) ? m->skill_freq + 15 : m->skill_freq;
+      auto regulated_greq = (freq > 100) ? 100 : freq;
       skills.push_back(std::make_pair(sk, freq));
     }
 
@@ -340,9 +343,8 @@ std::pair<int, double> highest_chance(const std::vector<std::shared_ptr<monster>
       if(p.first > threshold)  win_chance += p.second;
     }
 
-    double f_chance = win_chance / 10000000000.0;
-    if(f_chance > chance) {
-      chance = f_chance;
+    if(win_chance > chance) {
+      chance = win_chance;
       ld = i;
     }
   }
@@ -413,9 +415,9 @@ class skill_f{
   public:
   std::vector<std::vector<std::shared_ptr<monster>>> result;
 
-  std::vector<double> chance;
+  std::vector<uint64_t> chance;
 
-  skill_f(const std::vector<std::shared_ptr<E>>& e): enemys(e), result(e.size()), chance(e.size(), 0.0){};
+  skill_f(const std::vector<std::shared_ptr<E>>& e): enemys(e), result(e.size()), chance(e.size(), 0){};
 
   template <class It>
     bool operator()(It first, It last){
@@ -439,7 +441,9 @@ class skill_f{
 
             auto chance = highest_chance(ms, *e_it);
 
-            if((chance.second > *c_it) || (chance.second == *c_it && o_cost > cost)){
+            if(((chance.second > *c_it) && (chance.second - *c_it > 500000000 || o_cost > cost)) || 
+				(chance.second == *c_it && o_cost > cost) ||
+                (*c_it - chance.second < 500000000 && o_cost > cost)){
               *r_it = ms;
               *c_it = chance.second;
             }
