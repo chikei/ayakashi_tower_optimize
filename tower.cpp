@@ -441,9 +441,7 @@ class skill_f{
 
             auto chance = highest_chance(ms, *e_it);
 
-            if(((chance.second > *c_it) && (chance.second - *c_it > 500000000 || o_cost > cost)) || 
-				(chance.second == *c_it && o_cost > cost) ||
-                (*c_it - chance.second < 500000000 && o_cost > cost)){
+            if((chance.second > *c_it) || (chance.second == *c_it && o_cost > cost)){
               *r_it = ms;
               *c_it = chance.second;
             }
