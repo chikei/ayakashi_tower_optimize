@@ -143,7 +143,7 @@ std::shared_ptr<monster> parse_monster(const std::string& line){
   }
 
   if(data[10].find(u8"\u6975\u9AD8\u767C\u52D5\u7387") != std::string::npos){
-    m->skill_freq = 95;
+    m->skill_freq = 80;
   } else if(data[10].find(u8"\u9AD8\u767C\u52D5\u7387") != std::string::npos){
     m->skill_freq = 70;
   }
