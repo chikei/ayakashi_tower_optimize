@@ -331,8 +331,8 @@ std::pair<int, uint64_t> highest_chance(const std::vector<std::shared_ptr<monste
       const auto& m = our[j];
       auto sk = compute_skill(our, m, enemy->defense, enemy->attr);
       auto freq = (i == j) ? m->skill_freq + 15 : m->skill_freq;
-      auto regulated_greq = (freq > 100) ? 100 : freq;
-      skills.push_back(std::make_pair(sk, freq));
+      auto regulated_freq = (freq > 100) ? 100 : freq;
+      skills.push_back(std::make_pair(sk, regulated_freq));
     }
 
     auto dist = compute_skill_distribution(skills);
