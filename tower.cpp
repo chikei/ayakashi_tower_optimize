@@ -66,6 +66,7 @@ struct monster{
   std::string skill_attr = "";
   std::string skill_buff = "";
   int skill_freq = 50;
+  int extra_atk = 0;
 };
 
 struct enemy{
@@ -94,7 +95,7 @@ std::shared_ptr<monster> parse_monster(const std::string& line){
   std::shared_ptr<monster> nptr;
   auto data = split(line);
   auto m = std::make_shared<monster>();
-  if(data.size() < 11) return nptr;
+  if(data.size() < 12) return nptr;
   m->id = std::stoi(data[1]);
   m->name = data[2];
   m->lv = data[3];
@@ -146,6 +147,10 @@ std::shared_ptr<monster> parse_monster(const std::string& line){
     m->skill_freq = 80;
   } else if(data[10].find(u8"\u9AD8\u767C\u52D5\u7387") != std::string::npos){
     m->skill_freq = 70;
+  }
+
+  if(!data[11].empty()){
+      m->extra_atk = std::stoi(data[11]);
   }
 
   return m;
@@ -223,9 +228,10 @@ template <typename E>
 int try_attack(const std::vector<std::shared_ptr<monster>>& our,
     const std::shared_ptr<E> target){
   int base = 0;
-  for(const auto& m : our) { base += m->attack; }
+  int extra = 0;
+  for(const auto& m : our) { base += m->attack; extra += m->extra_atk;}
   for(int i = 0; i < 5; i++){
-    auto atk = compute_basic_atk(our, target, base, i);
+    auto atk = compute_basic_atk(our, target, base, i) + extra;
     if(atk > target->defense) return i;
   }
   return -1;
@@ -304,13 +310,14 @@ template <typename E>
 int try_skill_attack(const std::vector<std::shared_ptr<monster>>& our,
     const std::shared_ptr<E> target){
   int base = 0;
-  for(const auto& m : our) { base += m->attack; }
+  int extra = 0;
+  for(const auto& m : our) { base += m->attack; extra += m->extra_atk;}
 
   double skill_atk = 0.0;
   for(const auto& m : our) { skill_atk += compute_skill(our, m, target->defense, target->attr); }
 
   for(int i = 0; i < 5; i++){
-    auto atk = compute_basic_atk(our, target, base, i) + skill_atk;
+    auto atk = compute_basic_atk(our, target, base, i) + skill_atk + extra;
     if(atk > target->defense) return i;
   }
   return -1;
@@ -321,8 +328,9 @@ std::pair<int, uint64_t> highest_chance(const std::vector<std::shared_ptr<monste
     std::shared_ptr<E> enemy){
   uint64_t chance = 0;
   int base = 0;
+  int extra = 0;
   int ld = 0;
-  for(const auto& m : our) { base += m->attack; }
+  for(const auto& m : our) { base += m->attack; extra += m->extra_atk;}
 
   for(int i = 0; i < 5; ++i){
     auto leader = our[i];
@@ -336,7 +344,7 @@ std::pair<int, uint64_t> highest_chance(const std::vector<std::shared_ptr<monste
     }
 
     auto dist = compute_skill_distribution(skills);
-    auto threshold = enemy->defense - compute_basic_atk(our, enemy, base, i);
+    auto threshold = enemy->defense - compute_basic_atk(our, enemy, base, i) - extra;
 
     uint64_t win_chance = 0;
     for(const auto& p: dist){
@@ -441,7 +449,9 @@ class skill_f{
 
             auto chance = highest_chance(ms, *e_it);
 
-            if((chance.second > *c_it) || (chance.second == *c_it && o_cost > cost)){
+            if((chance.second >= 9500000000 && o_cost > cost) || 
+                    (chance.second < 9500000000 && 
+                        ((chance.second > *c_it) || (chance.second == *c_it && o_cost > cost)))){
               *r_it = ms;
               *c_it = chance.second;
             }
@@ -477,9 +487,10 @@ void nonskill(std::vector<std::shared_ptr<monster>> our,
         team.insert(team.end(), r.begin() + idx + 1, r.end());
 
       int base = 0;
-      for(const auto& m : team) base += m->attack; 
+      int extra = 0;
+      for(const auto& m : team) {base += m->attack; extra += m->extra_atk;}
 
-      printTeam(ofs, team, compute_basic_atk(team, e, base, 0), e);
+      printTeam(ofs, team, compute_basic_atk(team, e, base, 0) + extra, e);
       ofs << std::endl << std::endl;
 
     } else {
@@ -517,12 +528,13 @@ void skill(std::vector<std::shared_ptr<monster>> our,
         team.insert(team.end(), r.begin() + idx + 1, r.end());
 
       int base = 0;
-      for(const auto& m : team) base += m->attack; 
+      int extra = 0;
+      for(const auto& m : team) {base += m->attack; extra += m->extra_atk;}
 
       double skill_atk = 0.0;
       for(const auto& m : r) { skill_atk += compute_skill(r, m, e->defense, e->attr); }
 
-      printTeam(ofs, team, compute_basic_atk(team, e, base, 0) + skill_atk, e);
+      printTeam(ofs, team, compute_basic_atk(team, e, base, 0) + skill_atk + extra, e);
       ofs << std::endl;
       ofs << "prob: " << idx_.second << std::endl;
       ofs << std::endl << std::endl;
